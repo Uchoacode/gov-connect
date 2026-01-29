@@ -1,0 +1,130 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String      @id @default(cuid())
+  name          String
+  email         String      @unique
+  password      String
+  userType      String      @default("consumer") // organizer, consumer
+  avatar        String?
+  bio           String?
+  organization  String?
+  website       String?
+  socialLinks   String?     // JSON string
+  area          String?     // Área de atuação (direito, contabilidade, tecnologia, etc.)
+  role          String      @default("user") // user, admin
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  events        Event[]
+  posts         Post[]
+  followers     Follow[]    @relation("Follower")
+  following     Follow[]    @relation("Following")
+  savedEvents   SavedEvent[]
+  jobPostings   JobPosting[]
+}
+
+model Event {
+  id            String      @id @default(cuid())
+  title         String
+  description   String
+  image         String?
+  banner        String?
+  location      String?
+  date          DateTime
+  time          String?
+  organizer     String
+  organizerId   String
+  category      String?
+  area          String?     // Área temática
+  modality      String      @default("presencial") // online, presencial, hibrido
+  isFree        Boolean     @default(true)
+  price         String?
+  registrationLink String?  // Link externo de inscrição
+  targetAudience String?    // Público-alvo
+  certification Boolean     @default(false)
+  program       String?     // Programação detalhada
+  isPublic      Boolean     @default(true)
+  views         Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  savedBy       SavedEvent[]
+}
+
+model Post {
+  id          String   @id @default(cuid())
+  content     String
+  image       String?
+  isInstitutional Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+}
+
+model SavedEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  eventId   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+}
+
+model JobPosting {
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  company       String
+  location      String?
+  type          String   @default("estagio") // estagio, trainee, efetivo
+  area          String?  // Área de atuação
+  requirements  String?  // Requisitos
+  benefits      String?  // Benefícios
+  salary        String?  // Faixa salarial
+  isRemote      Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  applicationLink String? // Link para inscrição externa
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applications  JobApplication[]
+}
+
+model JobApplication {
+  id          String     @id @default(cuid())
+  name        String
+  email       String
+  phone       String?
+  resume      String?    // URL ou texto do currículo
+  coverLetter String?    // Carta de apresentação
+  status      String     @default("pending") // pending, reviewed, rejected, accepted
+  createdAt   DateTime   @default(now())
+  jobId       String
+  job         JobPosting @relation(fields: [jobId], references: [id], onDelete: Cascade)
+}
